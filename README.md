@@ -250,7 +250,9 @@ Potential improvements:
 
 ## License
 
-This package follows the license of the upstream LiteX M2SDR project.
+This package is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Note: This package builds and links against the [LiteX M2SDR](https://github.com/enjoy-digital/litex_m2sdr) project, which has its own license. Users should comply with the licenses of all dependencies.
 
 ## Acknowledgments
 

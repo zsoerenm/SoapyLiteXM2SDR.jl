@@ -2,6 +2,7 @@ name = "SoapyLiteXM2SDR"
 uuid = "70e44bef-57e3-4368-b781-93ef4173b1e2"
 version = "0.1.0"
 authors = ["Soeren Schoenbrod <soeren.schoenbrod@juliahub.com>"]
+license = "MIT"
 
 [deps]
 CMake_jll = "3f4e10e2-61f2-5801-8945-23b9d642d0e6"
