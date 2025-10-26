@@ -1,0 +1,24 @@
+name = "SoapyLiteXM2SDR"
+uuid = "70e44bef-57e3-4368-b781-93ef4173b1e2"
+version = "0.1.0"
+authors = ["Soeren Schoenbrod <soeren.schoenbrod@juliahub.com>"]
+
+[deps]
+CMake_jll = "3f4e10e2-61f2-5801-8945-23b9d642d0e6"
+GCCBootstrap_jll = "7627cfbf-f290-59f7-b5e8-595c7b62b918"
+GNUMake_jll = "6c1a3432-6b93-5c89-98b5-f3caf0c092ba"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+LibGit2 = "76f85450-5226-5b5a-8eaa-529ad045b433"
+Scratch = "6c6a2e73-6563-6170-7368-637461726353"
+soapysdr_jll = "343a40d9-ed99-5d34-8b56-649aaa4ecee6"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
+[compat]
+Scratch = "1"
+soapysdr_jll = "0.8"
+julia = "1.6"
