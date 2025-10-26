@@ -66,7 +66,8 @@ using Libdl
             @testset "File exists and is readable" begin
                 @test isfile(module_path)
                 @test filesize(module_path) > 0
-                @test isreadable(module_path)
+                # Check file permissions (Julia 1.10 compatible)
+                @test (filemode(module_path) & 0o400) != 0  # Owner read permission
             end
 
             @testset "Dynamic library properties" begin

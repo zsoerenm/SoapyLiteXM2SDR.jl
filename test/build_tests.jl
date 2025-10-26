@@ -9,7 +9,8 @@ using soapysdr_jll
         scratch_dir = @get_scratch!("build")
 
         @test isdir(scratch_dir)
-        @test isreadable(scratch_dir)
+        # Check directory permissions (Julia 1.10 compatible)
+        @test (filemode(scratch_dir) & 0o400) != 0  # Owner read permission
         @test iswritable(scratch_dir)
     end
 
@@ -17,7 +18,8 @@ using soapysdr_jll
         deps_file = joinpath(dirname(pathof(SoapyLiteXM2SDR)), "..", "deps", "deps.jl")
 
         @test isfile(deps_file)
-        @test isreadable(deps_file)
+        # Check file permissions (Julia 1.10 compatible)
+        @test (filemode(deps_file) & 0o400) != 0  # Owner read permission
 
         # Parse the deps.jl file
         deps_content = read(deps_file, String)
@@ -41,7 +43,8 @@ using soapysdr_jll
         if isfile(module_path)
             @testset "Library file properties" begin
                 @test filesize(module_path) > 0
-                @test isreadable(module_path)
+                # Check file permissions (Julia 1.10 compatible)
+                @test (filemode(module_path) & 0o400) != 0  # Owner read permission
 
                 # Platform-specific extension
                 @test endswith(module_path, ".$(Libdl.dlext)")
