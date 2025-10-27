@@ -230,8 +230,9 @@ ldd <module_path> | grep SoapySDR
 The package uses [Scratch.jl](https://github.com/JuliaPackaging/Scratch.jl) to store build artifacts outside the package directory (Julia best practice):
 
 ```
-<scratch_space>/build/
+<scratch_space>/SoapyLiteXM2SDR-build/
 ├── litex_m2sdr/          # Cloned git repository
+├── kernel_build/         # Kernel driver build directory
 ├── build_soapy/          # CMake build directory
 └── install/              # Installation directory
     └── lib/SoapySDR/modules0.8/
@@ -252,7 +253,7 @@ Pkg.build("SoapyLiteXM2SDR")
 
 ```julia
 using Scratch
-scratch_dir = @get_scratch!("build")
+scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 rm(scratch_dir, recursive=true, force=true)
 
 using Pkg
