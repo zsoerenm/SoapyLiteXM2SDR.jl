@@ -6,6 +6,9 @@ using CMake_jll
 using GNUMake_jll
 using GCCBootstrap_jll
 
+# Include git helper functions
+include("git_helper.jl")
+
 # Use JLL packages for all build tools
 const cmake_cmd = CMake_jll.cmake()
 const make_cmd = GNUMake_jll.make()
@@ -31,31 +34,15 @@ scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 println("Using scratch directory: $scratch_dir")
 
 # Clone or update the litex_m2sdr repository
+# Using upstream repository - PR #84 has been merged with kernel 5.15 fixes
+# Pin to specific commit for reproducibility
+# Using commit 1f15d3f (merge of PR #84) which includes kernel 5.15 compatibility
+# PR #84 adds: blk_opf_t typedef for kernel < 6.0, submit_bio fixes for kernel < 5.16
 repo_url = "https://github.com/enjoy-digital/litex_m2sdr.git"
+commit_hash = "1f15d3f0ca082b7df232ca698f9413ef9ca0d77f"
 repo_dir = joinpath(scratch_dir, "litex_m2sdr")
 
-if isdir(repo_dir)
-    println("Repository already exists, updating...")
-    repo = LibGit2.GitRepo(repo_dir)
-    LibGit2.fetch(repo)
-else
-    println("Cloning repository from $repo_url...")
-    LibGit2.clone(repo_url, repo_dir)
-    repo = LibGit2.GitRepo(repo_dir)
-end
-
-# Pin to specific commit for reproducibility
-# Using commit 055dd44 (Oct 9, 2025) - last commit before LiteSATA support
-# Note: Later commits (086cf3c+) include LiteSATA support but don't compile on kernel 5.15
-# due to missing blk_opf_t type. LiteSATA support is only needed for SATA hardware,
-# not for the M.2 SDR module.
-commit_hash = "475cd3a8b3c62f2dd07355a86e15bbf612e2eb44"
-println("Checking out commit: $commit_hash")
-
-# Reset to the specific commit
-obj = LibGit2.GitObject(repo, commit_hash)
-LibGit2.reset!(repo, obj, LibGit2.Consts.RESET_HARD)
-println("Checked out commit: $commit_hash")
+repo = ensure_repository(repo_url, repo_dir, commit_hash)
 
 # Build the user libraries (liblitepcie and libm2sdr)
 println("\nBuilding user libraries...")
