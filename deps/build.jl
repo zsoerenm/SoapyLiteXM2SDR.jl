@@ -44,8 +44,12 @@ else
     repo = LibGit2.GitRepo(repo_dir)
 end
 
-# Pin to specific commit for reproducibility (from your build_tarballs.jl)
-commit_hash = "086cf3c0922fc954ca578218678c4f7928ea5b84"
+# Pin to specific commit for reproducibility
+# Using commit 055dd44 (Oct 9, 2025) - last commit before LiteSATA support
+# Note: Later commits (086cf3c+) include LiteSATA support but don't compile on kernel 5.15
+# due to missing blk_opf_t type. LiteSATA support is only needed for SATA hardware,
+# not for the M.2 SDR module.
+commit_hash = "055dd44459ee557d015786ca68cf04c1faebdbe7"
 println("Checking out commit: $commit_hash")
 
 # Reset to the specific commit
@@ -75,23 +79,25 @@ println("User libraries built successfully")
 # Build the LitePCIe kernel driver
 println("\nBuilding LitePCIe kernel driver...")
 kernel_driver_dir = joinpath(repo_dir, "litex_m2sdr/software/kernel")
-kernel_build_dir = joinpath(scratch_dir, "kernel_build")
 
 if isdir(kernel_driver_dir)
-    # Create kernel build directory
-    mkpath(kernel_build_dir)
-
-    # Copy kernel driver source to build directory
-    cp(kernel_driver_dir, kernel_build_dir, force=true)
-
-    # Build the kernel module (doesn't require sudo, just kernel headers)
-    cd(kernel_build_dir) do
+    # Build the kernel module in place (kernel build system expects this)
+    # Don't copy - build directly in the source directory
+    cd(kernel_driver_dir) do
         try
-            withenv(gcc_env...) do
-                run(`$make_cmd`)
+            # Clean any previous build artifacts first
+            run(`$make_cmd clean`)
+
+            # Build the kernel module
+            run(`$make_cmd`)
+
+            kernel_module_path = joinpath(kernel_driver_dir, "m2sdr.ko")
+            if isfile(kernel_module_path)
+                println("LitePCIe kernel driver built successfully")
+                println("Kernel module location: $kernel_module_path")
+            else
+                @warn "Kernel module m2sdr.ko not found after build"
             end
-            println("LitePCIe kernel driver built successfully")
-            println("Kernel module location: $(joinpath(kernel_build_dir, "m2sdr.ko"))")
         catch e
             @warn "Failed to build kernel driver. This is expected if kernel headers are not available." exception=e
             println("Kernel driver build skipped - hardware functionality will not be available")
@@ -139,7 +145,7 @@ println("\nBuild completed successfully!")
 println("SoapySDR module installed at: $module_path")
 
 # Save the installation path for the module to use
-kernel_module_path = joinpath(kernel_build_dir, "m2sdr.ko")
+kernel_module_path = joinpath(kernel_driver_dir, "m2sdr.ko")
 kernel_module_built = isfile(kernel_module_path)
 
 open(joinpath(@__DIR__, "deps.jl"), "w") do io

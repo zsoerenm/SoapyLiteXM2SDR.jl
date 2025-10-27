@@ -305,10 +305,11 @@ The package uses [Scratch.jl](https://github.com/JuliaPackaging/Scratch.jl) to s
 
 ```
 <scratch_space>/SoapyLiteXM2SDR-build/
-├── litex_m2sdr/          # Cloned git repository
-├── kernel_build/         # Kernel driver build directory
-├── build_soapy/          # CMake build directory
-└── install/              # Installation directory
+├── litex_m2sdr/                          # Cloned git repository
+│   └── litex_m2sdr/software/kernel/
+│       └── m2sdr.ko                      # Kernel module (built in place)
+├── build_soapy/                          # CMake build directory
+└── install/                              # Installation directory
     └── lib/SoapySDR/modules0.8/
         └── libSoapyLiteXM2SDR.so
 ```
