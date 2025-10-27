@@ -138,7 +138,7 @@ function kernel_module_info()
     loaded = is_kernel_module_loaded()
 
     println("LitePCIe Kernel Module Status")
-    println("=" ^ 50)
+    println("="^50)
 
     if kmod_path === nothing
         println("✗ Kernel module: Not built")
@@ -185,13 +185,11 @@ function __init__()
     try
         if isdefined(Main, :SoapySDR)
             SoapySDR_mod = Main.SoapySDR
-            if hasproperty(SoapySDR_mod, :Modules) && hasproperty(SoapySDR_mod.Modules, :load_module)
-                SoapySDR_mod.Modules.load_module(module_path)
-                @info "SoapyLiteXM2SDR driver automatically loaded into SoapySDR"
-            end
+            SoapySDR_mod.Modules.load_module(module_path)
+            @info "SoapyLiteXM2SDR driver automatically loaded into SoapySDR"
         end
     catch e
-        @debug "Could not auto-load module into SoapySDR" exception=e
+        @debug "Could not auto-load module into SoapySDR" exception = e
     end
 
     @info "SoapyLiteXM2SDR driver available at: $module_path"
