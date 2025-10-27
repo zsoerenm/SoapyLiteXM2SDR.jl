@@ -49,7 +49,7 @@ end
 # Note: Later commits (086cf3c+) include LiteSATA support but don't compile on kernel 5.15
 # due to missing blk_opf_t type. LiteSATA support is only needed for SATA hardware,
 # not for the M.2 SDR module.
-commit_hash = "055dd44459ee557d015786ca68cf04c1faebdbe7"
+commit_hash = "475cd3a8b3c62f2dd07355a86e15bbf612e2eb44"
 println("Checking out commit: $commit_hash")
 
 # Reset to the specific commit
@@ -99,7 +99,7 @@ if isdir(kernel_driver_dir)
                 @warn "Kernel module m2sdr.ko not found after build"
             end
         catch e
-            @warn "Failed to build kernel driver. This is expected if kernel headers are not available." exception=e
+            @warn "Failed to build kernel driver. This is expected if kernel headers are not available." exception = e
             println("Kernel driver build skipped - hardware functionality will not be available")
         end
     end
