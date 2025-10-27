@@ -97,6 +97,19 @@ module_path = SoapyLiteXM2SDR.get_module_path()
 # Get the installation directory
 install_dir = SoapyLiteXM2SDR.get_install_dir()
 # => "/home/user/.julia/scratchspaces/.../install"
+
+# Kernel module management
+kernel_path = SoapyLiteXM2SDR.get_kernel_module_path()
+# => "/home/user/.julia/scratchspaces/.../m2sdr.ko"
+
+# Check kernel module status
+SoapyLiteXM2SDR.kernel_module_info()
+
+# Load kernel module (requires hardware)
+SoapyLiteXM2SDR.install_kernel_module()  # Requires sudo
+
+# Unload kernel module
+SoapyLiteXM2SDR.uninstall_kernel_module()  # Requires sudo
 ```
 
 ### Using with SoapySDR Tools
@@ -116,9 +129,55 @@ SoapySDRUtil --probe="driver=litexm2sdr"
 
 ### Hardware Setup
 
-For actual usage with LiteX M2SDR hardware:
+For actual usage with LiteX M2SDR hardware, you need to load the LitePCIe kernel driver:
 
-**Install LitePCIe kernel driver and load the kernel** - See [litex_m2sdr documentation](https://github.com/enjoy-digital/litex_m2sdr)
+#### Automatic Installation (Recommended)
+
+The package automatically builds the LitePCIe kernel driver during installation. To install and load it:
+
+```julia
+using SoapyLiteXM2SDR
+
+# Check kernel module status
+SoapyLiteXM2SDR.kernel_module_info()
+
+# Install and load the kernel module (requires sudo)
+SoapyLiteXM2SDR.install_kernel_module()
+```
+
+This will prompt for your sudo password and install the kernel module.
+
+#### Manual Installation
+
+If you prefer manual installation, the kernel module is located at:
+
+```julia
+using SoapyLiteXM2SDR
+module_path = SoapyLiteXM2SDR.get_kernel_module_path()
+println("Kernel module: $module_path")
+```
+
+Then manually install it:
+
+```bash
+sudo insmod /path/to/m2sdr.ko
+```
+
+#### Unloading the Kernel Module
+
+To unload the kernel module:
+
+```julia
+SoapyLiteXM2SDR.uninstall_kernel_module()
+```
+
+Or manually:
+
+```bash
+sudo rmmod m2sdr
+```
+
+For more details on the LiteX M2SDR hardware, see the [litex_m2sdr documentation](https://github.com/enjoy-digital/litex_m2sdr)
 
 ## Technical Details
 
@@ -133,13 +192,18 @@ The build process uses Julia's `deps/build.jl` mechanism:
    - `libm2sdr.a` - M2SDR hardware control library
    - `libad9361_m2sdr.a` - AD9361 RF transceiver library
 
-3. **SoapySDR Module Build**: Uses CMake_jll and GCCBootstrap_jll to build `libSoapyLiteXM2SDR.so` with:
+3. **Kernel Driver Build**: Builds the LiteX M2SDR kernel module (`m2sdr.ko`):
+   - Source: `litex_m2sdr/software/kernel`
+   - Requires Linux kernel headers
+   - Non-critical: Build continues if kernel headers are unavailable
+
+4. **SoapySDR Module Build**: Uses CMake_jll and GCCBootstrap_jll to build `libSoapyLiteXM2SDR.so` with:
    - Source: `litex_m2sdr/software/soapysdr`
    - Linked against: `soapysdr_jll` artifact
    - RPATH: Set to soapysdr_jll library directory
    - Backend: USE_LITEPCIE
 
-4. **Installation**: Installs to scratch directory and generates `deps/deps.jl` with paths
+5. **Installation**: Installs to scratch directory and generates `deps/deps.jl` with paths
 
 ### CMake Configuration
 
