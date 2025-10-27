@@ -26,8 +26,8 @@ gcc_env = Dict{String,String}(
 
 println("Building SoapyLiteXM2SDR driver...")
 
-# Get a scratch space for the build
-scratch_dir = @get_scratch!("build")
+# Get a scratch space for the build (use package-specific name to avoid collisions)
+scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 println("Using scratch directory: $scratch_dir")
 
 # Clone or update the litex_m2sdr repository

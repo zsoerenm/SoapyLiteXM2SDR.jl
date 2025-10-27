@@ -97,12 +97,12 @@ using Libdl
     @testset "Scratch Space Management" begin
         @testset "Scratch directory exists" begin
             # Get scratch space used for building
-            scratch_dir = @get_scratch!("build")
+            scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
             @test isdir(scratch_dir)
         end
 
         @testset "Build artifacts structure" begin
-            scratch_dir = @get_scratch!("build")
+            scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 
             # Check for expected build structure if build completed
             if isdir(joinpath(scratch_dir, "litex_m2sdr"))

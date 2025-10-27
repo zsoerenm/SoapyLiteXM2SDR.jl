@@ -6,7 +6,7 @@ using soapysdr_jll
 
 @testset "Build System Tests" begin
     @testset "Scratch space configuration" begin
-        scratch_dir = @get_scratch!("build")
+        scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 
         @test isdir(scratch_dir)
         # Check directory permissions (Julia 1.10 compatible)
@@ -97,7 +97,7 @@ using soapysdr_jll
     end
 
     @testset "Build artifacts structure" begin
-        scratch_dir = @get_scratch!("build")
+        scratch_dir = @get_scratch!("SoapyLiteXM2SDR-build")
 
         if isdir(joinpath(scratch_dir, "litex_m2sdr"))
             @testset "Source repository" begin
