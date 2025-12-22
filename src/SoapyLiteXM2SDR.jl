@@ -237,6 +237,14 @@ function install_kernel_module()
     println("This requires sudo privileges and will prompt for your password.")
 
     try
+        # Load dependencies first (the m2sdr module depends on ptp)
+        # modprobe can load standard kernel modules by name
+        try
+            run(`sudo modprobe ptp`)
+        catch
+            # ptp might already be loaded or built-in, continue anyway
+        end
+
         run(`sudo insmod $kmod_path`)
         println("✓ Kernel module installed successfully")
 
@@ -247,7 +255,20 @@ function install_kernel_module()
             @warn "Kernel module installation succeeded but module not found in lsmod"
         end
     catch e
-        error("Failed to install kernel module: $e")
+        # Provide helpful error message for common issues
+        err_str = string(e)
+        if occursin("Unknown symbol", err_str) || occursin("disagrees about version", err_str)
+            error("""
+            Failed to install kernel module: $e
+
+            This usually means the kernel module was built against different kernel headers
+            than the currently running kernel. Try:
+            1. Reboot if you recently updated your kernel
+            2. Rebuild the package: Pkg.build("SoapyLiteXM2SDR")
+            """)
+        else
+            error("Failed to install kernel module: $e")
+        end
     end
 end
 
@@ -299,12 +320,15 @@ function kernel_module_info()
     println("Kernel module loaded: $(loaded ? "✓ Yes" : "✗ No")")
 
     if loaded
-        println("\nModule information:")
-        try
-            modinfo = read(`modinfo m2sdr`, String)
-            println(modinfo)
-        catch
-            println("(Could not retrieve module info)")
+        if kmod_path !== nothing
+            println("\nModule information:")
+            try
+                # Use the full path since module is loaded via insmod, not from standard paths
+                modinfo = read(`modinfo $kmod_path`, String)
+                println(modinfo)
+            catch
+                println("(Could not retrieve module info)")
+            end
         end
     else
         println("\nTo load the kernel module, run:")
