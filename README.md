@@ -30,9 +30,14 @@ using SoapyLiteXM2SDR
 # Check status (shows distro-specific install instructions if headers are missing)
 SoapyLiteXM2SDR.kernel_module_info()
 
-# Load the kernel module (prompts for sudo password)
+# Load the kernel module and install udev rule (prompts for sudo password)
 SoapyLiteXM2SDR.install_kernel_module()
 ```
+
+This automatically:
+- Loads the `ptp` dependency module
+- Inserts the `m2sdr` kernel module
+- Installs udev rule (`/etc/udev/rules.d/99-m2sdr.rules`) for non-root device access
 
 ### Use with SoapySDR
 
@@ -49,8 +54,10 @@ devices = SoapySDR.Devices()
 SoapyLiteXM2SDR.get_module_path()         # Path to SoapySDR driver
 SoapyLiteXM2SDR.get_kernel_module_path()  # Path to kernel module
 SoapyLiteXM2SDR.is_kernel_module_loaded() # Check if loaded
-SoapyLiteXM2SDR.install_kernel_module()   # Load module (requires sudo)
+SoapyLiteXM2SDR.install_kernel_module()   # Load module + udev rule (requires sudo)
 SoapyLiteXM2SDR.uninstall_kernel_module() # Unload module (requires sudo)
+SoapyLiteXM2SDR.install_udev_rule()       # Install udev rule only (requires sudo)
+SoapyLiteXM2SDR.uninstall_udev_rule()     # Remove udev rule (requires sudo)
 SoapyLiteXM2SDR.kernel_module_info()      # Display detailed status
 ```
 
