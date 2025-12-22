@@ -2,6 +2,147 @@ module SoapyLiteXM2SDR
 
 using soapysdr_jll
 
+"""
+    detect_linux_distro()
+
+Detect the Linux distribution. Returns a tuple (distro_id, distro_name).
+The distro_id is a lowercase identifier like "ubuntu", "arch", "fedora", etc.
+Returns ("unknown", "Unknown") if detection fails.
+"""
+function detect_linux_distro()
+    # Try /etc/os-release first (most modern distros)
+    if isfile("/etc/os-release")
+        try
+            content = read("/etc/os-release", String)
+            id_match = match(r"^ID=(.*)$"m, content)
+            name_match = match(r"^PRETTY_NAME=\"?([^\"\n]*)\"?"m, content)
+
+            distro_id = id_match !== nothing ? lowercase(strip(id_match.captures[1], ['"', '\''])) : "unknown"
+            distro_name = name_match !== nothing ? strip(name_match.captures[1]) : "Unknown"
+
+            return (distro_id, distro_name)
+        catch
+        end
+    end
+
+    # Fallback detection methods
+    if isfile("/etc/debian_version")
+        return ("debian", "Debian-based")
+    elseif isfile("/etc/redhat-release")
+        return ("rhel", "Red Hat-based")
+    elseif isfile("/etc/arch-release")
+        return ("arch", "Arch Linux")
+    end
+
+    return ("unknown", "Unknown")
+end
+
+"""
+    check_kernel_headers()
+
+Check if kernel headers are available for the current kernel.
+Returns (available::Bool, kernel_version::String, headers_path::String).
+"""
+function check_kernel_headers()
+    kernel_version = try
+        strip(read(`uname -r`, String))
+    catch
+        "unknown"
+    end
+
+    headers_path = "/lib/modules/$kernel_version/build"
+    available = isdir(headers_path)
+
+    return (available, kernel_version, headers_path)
+end
+
+"""
+    kernel_headers_install_instructions()
+
+Return instructions for installing kernel headers based on the detected distribution.
+"""
+function kernel_headers_install_instructions()
+    distro_id, distro_name = detect_linux_distro()
+    headers_available, kernel_version, _ = check_kernel_headers()
+
+    if headers_available
+        return "Kernel headers are already installed for kernel $kernel_version."
+    end
+
+    base_msg = "Kernel headers not found for kernel $kernel_version.\n\nTo install kernel headers"
+
+    instructions = if distro_id in ("arch", "artix", "manjaro", "endeavouros")
+        """
+        $base_msg on $distro_name, run:
+            sudo pacman -S linux-headers
+
+        Note: If you're using a different kernel (e.g., linux-lts, linux-zen),
+        install the corresponding headers package (e.g., linux-lts-headers, linux-zen-headers).
+        """
+    elseif distro_id in ("ubuntu", "debian", "linuxmint", "pop")
+        """
+        $base_msg on $distro_name, run:
+            sudo apt install linux-headers-\$(uname -r)
+
+        Or for all installed kernels:
+            sudo apt install linux-headers-generic
+        """
+    elseif distro_id in ("fedora",)
+        """
+        $base_msg on $distro_name, run:
+            sudo dnf install kernel-devel kernel-headers
+        """
+    elseif distro_id in ("rhel", "centos", "rocky", "almalinux", "oracle")
+        """
+        $base_msg on $distro_name, run:
+            sudo yum install kernel-devel kernel-headers
+
+        Or with dnf:
+            sudo dnf install kernel-devel kernel-headers
+        """
+    elseif distro_id in ("opensuse", "opensuse-leap", "opensuse-tumbleweed", "sles")
+        """
+        $base_msg on $distro_name, run:
+            sudo zypper install kernel-devel
+        """
+    elseif distro_id in ("gentoo",)
+        """
+        $base_msg on $distro_name:
+        Ensure your kernel sources are installed and configured:
+            sudo emerge sys-kernel/linux-headers
+
+        Or if using a distribution kernel:
+            sudo emerge sys-kernel/gentoo-kernel
+        """
+    elseif distro_id in ("nixos",)
+        """
+        $base_msg on $distro_name:
+        Add the following to your configuration.nix:
+            boot.kernelPackages = pkgs.linuxPackages;
+
+        Then rebuild: sudo nixos-rebuild switch
+        """
+    elseif distro_id in ("alpine",)
+        """
+        $base_msg on $distro_name, run:
+            sudo apk add linux-headers
+        """
+    else
+        """
+        $base_msg:
+        Please install the kernel headers package for your distribution.
+        Common package names include:
+            - linux-headers (Arch-based)
+            - linux-headers-\$(uname -r) (Debian/Ubuntu)
+            - kernel-devel (Fedora/RHEL)
+
+        Detected distribution: $distro_name (ID: $distro_id)
+        """
+    end
+
+    return strip(instructions)
+end
+
 # Load the deps.jl file generated during build
 const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
 if !isfile(depsjl_path)
@@ -76,11 +217,15 @@ function install_kernel_module()
     kmod_path = get_kernel_module_path()
 
     if kmod_path === nothing
+        instructions = kernel_headers_install_instructions()
         error("""
-        Kernel module was not built. Please rebuild the package with:
+        Kernel module was not built.
+
+        $instructions
+
+        After installing kernel headers, rebuild the package with:
             using Pkg
             Pkg.build("SoapyLiteXM2SDR")
-        Ensure Linux kernel headers are installed on your system.
         """)
     end
 
@@ -142,8 +287,10 @@ function kernel_module_info()
 
     if kmod_path === nothing
         println("✗ Kernel module: Not built")
-        println("\nTo build the kernel module, ensure kernel headers are")
-        println("installed and run: Pkg.build(\"SoapyLiteXM2SDR\")")
+        println()
+        println(kernel_headers_install_instructions())
+        println()
+        println("After installing kernel headers, rebuild with: Pkg.build(\"SoapyLiteXM2SDR\")")
     else
         println("✓ Kernel module path: $kmod_path")
         println("✓ Kernel module exists: $(isfile(kmod_path))")
