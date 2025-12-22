@@ -254,6 +254,9 @@ function install_kernel_module()
         else
             @warn "Kernel module installation succeeded but module not found in lsmod"
         end
+
+        # Install udev rule for non-root access
+        install_udev_rule()
     catch e
         # Provide helpful error message for common issues
         err_str = string(e)
@@ -269,6 +272,71 @@ function install_kernel_module()
         else
             error("Failed to install kernel module: $e")
         end
+    end
+end
+
+const UDEV_RULES_PATH = "/etc/udev/rules.d/99-m2sdr.rules"
+const UDEV_RULE_CONTENT = """
+# LiteX M2SDR - allow non-root access to device nodes
+KERNEL=="m2sdr*", MODE="0666"
+"""
+
+"""
+    is_udev_rule_installed()
+
+Check if the udev rule for M2SDR device access is installed.
+"""
+function is_udev_rule_installed()
+    isfile(UDEV_RULES_PATH)
+end
+
+"""
+    install_udev_rule()
+
+Install a udev rule to allow non-root access to M2SDR devices.
+Requires sudo privileges. This is called automatically by `install_kernel_module()`.
+"""
+function install_udev_rule()
+    if is_udev_rule_installed()
+        println("✓ udev rule already installed")
+        return
+    end
+
+    println("Installing udev rule for non-root device access...")
+
+    try
+        # Write the udev rule
+        run(pipeline(`echo $UDEV_RULE_CONTENT`, `sudo tee $UDEV_RULES_PATH`))
+
+        # Reload udev rules
+        run(`sudo udevadm control --reload-rules`)
+        run(`sudo udevadm trigger`)
+
+        println("✓ udev rule installed at $UDEV_RULES_PATH")
+    catch e
+        @warn "Failed to install udev rule: $e\nYou may need to run as root or manually set device permissions."
+    end
+end
+
+"""
+    uninstall_udev_rule()
+
+Remove the udev rule for M2SDR device access. Requires sudo privileges.
+"""
+function uninstall_udev_rule()
+    if !is_udev_rule_installed()
+        println("udev rule is not installed")
+        return
+    end
+
+    println("Removing udev rule...")
+
+    try
+        run(`sudo rm $UDEV_RULES_PATH`)
+        run(`sudo udevadm control --reload-rules`)
+        println("✓ udev rule removed")
+    catch e
+        @warn "Failed to remove udev rule: $e"
     end
 end
 
@@ -318,6 +386,26 @@ function kernel_module_info()
     end
 
     println("Kernel module loaded: $(loaded ? "✓ Yes" : "✗ No")")
+    println("udev rule installed: $(is_udev_rule_installed() ? "✓ Yes" : "✗ No")")
+
+    # Check device node permissions
+    if loaded
+        dev_nodes = filter(f -> startswith(f, "m2sdr"), readdir("/dev"))
+        if !isempty(dev_nodes)
+            dev_path = joinpath("/dev", first(dev_nodes))
+            try
+                # Check if we can read the device
+                open(dev_path, "r") do _ end
+                println("Device access: ✓ Accessible")
+            catch e
+                if e isa Base.IOError && occursin("Permission denied", string(e))
+                    println("Device access: ✗ Permission denied (run install_udev_rule() or use sudo)")
+                else
+                    println("Device access: ? Unknown ($e)")
+                end
+            end
+        end
+    end
 
     if loaded
         if kmod_path !== nothing
