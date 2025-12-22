@@ -233,6 +233,14 @@ function install_kernel_module()
         error("Kernel module not found at: $kmod_path")
     end
 
+    # Check if already loaded
+    if is_kernel_module_loaded()
+        println("✓ Kernel module is already loaded")
+        # Still ensure udev rule is installed
+        install_udev_rule()
+        return
+    end
+
     println("Installing LitePCIe kernel module...")
     println("This requires sudo privileges and will prompt for your password.")
 
